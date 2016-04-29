@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	
+	<script type="text/javascript">
+      google.load('visualization', '1', {'packages': ['table']});
+	  google.setOnLoadCallback(initialize);	
+
+	  var table = new google.visualization.Table(document.getElementById('table_div'));	   
+	  var gdata = new google.visualization.DataTable();
+
+	 
+	 function initialize() 
+	 {
+		  gdata.addColumn('string', 'DataType');
+		  gdata.addColumn('string', 'DataValue');
+		  gdata.addColumn('number', 'Longitude');
+		  gdata.addColumn('number', 'Latitude');
+		  gdata.addColumn('string', 'Time');
+  		if ("WebSocket" in window) {
+			console.log('WebSocket is supported by your browser.');
+			var serviceUrl =  'ws://localhost:8080/IOTWebClient/websocket/fitnesscalc'
+			socket = new WebSocket(serviceUrl);
+
+			socket.onopen = function() {
+				console.log('Connection Established!');
+			};
+
+			socket.onclose = function() {
+				console.log('Connection Closed!');
+			};
+
+			socket.onerror = function(error) {
+				console.log('Error Occured: ' + error);
+			};
+			
+			socket.onmessage = function(e)
+			{
+			if (typeof e.data === "string") 
+			{
+				console.log('String message received: ' + e.data);
+				if (e.data.indexOf("Connection") < 0) {
+					var json = JSON.parse(e.data);
+					console.log("json is " + json);
+					console.log("action is " + json.action);
+					gdata.addRows(1);
+					gdata.setCell(0, 0, json.datatype);
+					gdata.setCell(0, 1, json.datavalue);
+					gdata.setCell(0, 2, json.longitude);						
+					gdata.setCell(0, 3, json.latitude);
+					gdata.setCell(0, 3, json.timevalue);						
+				}
+
+			} else if (e.data instanceof ArrayBuffer) 
+			{
+				console.log('ArrayBuffer received: ' + e.data);} 
+			else if (e.data instanceof Blob) 
+			{
+				console.log('Blob received: ' + e.data);
+			} 
+			else console.log('Unknown: ' + e.data);
+			
+			table.draw(gdata, {showRowNumber: true});
+			}
+		}	
+	}
+    </script>
+  </head>
+
+  <body>
+    <table align="center">
+      <tr valign="top">
+        <td style="width: 50%;">
+          <div id="map_div" style="width: 400px; height: 300;"></div>
+        </td>
+        <td style="width: 50%;">
+          <div id="table_div"></div>
+        </td>
+      </tr>
+      <tr>
+        <td colSpan=2>
+          <div id="chart_div" style="align: center; width: 700px; height: 300px;"></div>
+        </td>
+      </tr>
+    </table>
+
+  </body>
+</html>

@@ -1,0 +1,121 @@
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["table","gauge","corechart"]});
+      google.setOnLoadCallback(drawTable);
+
+      function drawTable() {
+	    var table = new google.visualization.Table(document.getElementById('table_div'));
+/*
+        var gauge = new google.visualization.Gauge(document.getElementById('gauge_div'));
+		var gaugeOptions = {min: 0, max: 280, yellowFrom: 200, yellowTo: 250,redFrom: 250, redTo: 280, minorTicks: 5};
+*/
+		var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+		var chartOptions = {
+          title: 'Heart Rate',
+          curveType: 'function',
+          legend: { position: 'bottom' }
+        };
+		var gdata = new google.visualization.DataTable();
+		
+		var chartData = new google.visualization.DataTable(); 
+		
+		/* 
+		var gaugeData = new google.visualization.DataTable(); 
+		gauge.draw(gaugeData, gaugeOptions); 
+		*/
+		
+		gdata.addColumn('number', 'Longitude');
+		gdata.addColumn('number', 'Latitude');
+   	    gdata.addColumn('string', 'DataType');
+		gdata.addColumn('number', 'DataValue');
+		gdata.addColumn('string', 'Time');
+		chartData.addColumn('number', 'Serial');
+		chartData.addColumn('number', 'HeartRate');
+		/* gaugeData.addColumn('number','HeartRate'); */
+	    
+		
+		if ("WebSocket" in window) {
+			console.log('WebSocket is supported by your browser.');
+			var serviceUrl =  'ws://localhost:9090/IOTWebClient/websocket/fitnesscalc'
+			socket = new WebSocket(serviceUrl);
+
+			socket.onopen = function() {
+				console.log('Connection Established!');
+			};
+
+			socket.onclose = function() {
+				console.log('Connection Closed!');
+			};
+
+			socket.onerror = function(error) {
+				console.log('Error Occured: ' + error);
+			};
+			ctr = 0;
+			socket.onmessage = function(e)
+			{
+				if (typeof e.data === "string") 
+				{
+					console.log('String message received: ' + e.data);
+					if (e.data.indexOf("Connection") < 0) {
+						var json = JSON.parse(e.data);
+						console.log("json is " + json);
+						ctr = ctr+1;
+						gdata.addRows([[json.longitude,json.latitude,json.datatype,json.datavalue,json.timevalue]]);
+					
+						chartData.addRows([[ctr,json.datavalue]]);
+						/* gaugeData.addRows([[json.datavalue]]); */
+						
+					}
+
+				} else if (e.data instanceof ArrayBuffer) 
+				{
+					console.log('ArrayBuffer received: ' + e.data);} 
+				else if (e.data instanceof Blob) 
+				{
+					console.log('Blob received: ' + e.data);
+				} 
+				else console.log('Unknown: ' + e.data);				
+				table.draw(gdata, {showRowNumber: true});
+				chart.draw(chartData, chartOptions);
+				
+				
+				}
+		}	
+		google.visualization.events.addListener(table, 'select', function() {
+		var row = table.getSelection()[0].row;
+			alert('You selected ' + gdata.getValue(row, 0));
+		});
+
+
+
+		
+      }
+    </script>
+  </head>
+  <body>
+    <table align="center">
+      <tr valign="top">
+        <td style="width: 50%;">
+          <div id="table_div"></div>
+        </td>
+        <td style="width: 50%;">
+			<div id="chart_div" style="align: center; width: 700px; height: 300px;"></div>
+		</td>
+
+		</tr>
+      <tr>
+        <td colSpan=2>
+          <div id="gauge_div" style="width:280px; height: 140px;"></div>
+        </td>
+      </tr>
+    </table>
+
+  </body>
+</html>
+
+
+
+      
+		
